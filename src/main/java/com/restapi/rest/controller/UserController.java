@@ -10,14 +10,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.restapi.rest.entity.User;
 import com.restapi.rest.interfaces.UserRepository;
 
 @RestController
-@RequestMapping(path = "/user")
+//@RequestMapping(path = "/user")
 public class UserController {
 	@Autowired
 	private UserRepository repo;
