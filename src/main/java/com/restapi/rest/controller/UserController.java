@@ -1,50 +1,118 @@
 package com.restapi.rest.controller;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.restapi.rest.entity.User;
-import com.restapi.rest.interfaces.UserRepository;
+import com.restapi.rest.service.UserService;
 
 @RestController
 //@RequestMapping(path = "/user")
+@CrossOrigin(origins = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE,
+		RequestMethod.PUT })
 public class UserController {
+
 	@Autowired
-	private UserRepository repo;
+	private UserService userService;
 
-	@PostMapping("/add")
-	public User add(@RequestBody User val) {
-		return repo.save(val);
+	@PostMapping("/agregar")
+	public ResponseEntity<?> agregar(@RequestBody User val) {
+		Map<String, Object> response = new HashMap<>();
+		User user = null;
+		try {
+			// return ResponseEntity.ok(repo.save(val));
+			user = userService.guardar(val);
+		} catch (DataAccessException e) {
+			response.put("mensaje", "Error al realizar la consulta en la base de datos");
+			response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		response.put("mensaje", "El usuario ha sido creado con éxito");
+		response.put("referencia", user);
+		return new ResponseEntity<Map<String, Object>>(response, HttpStatus.CREATED);
 	}
 
-	@GetMapping("/views")
-	public List<User> views() {
-		return repo.findAll();
+	@GetMapping("/listar")
+	public ResponseEntity<?> listar() {
+		// return repo.findAll();
+		try {
+			List<User> lista = new ArrayList<User>();
+			lista = userService.listar();
+			return new ResponseEntity<>(lista, HttpStatus.OK);
+		} catch (Exception e) {
+			return new ResponseEntity<>("No se puede conectar al servidor.", HttpStatus.BAD_REQUEST);
+		}
 	}
 
-	@GetMapping("/views/{val}")
-	public Optional<User> views(@PathVariable Integer val) {
-		return repo.findById(val);
+	@GetMapping("/listar/pagina/{page}")
+	public Page<User> paginar(@PathVariable Integer page) {
+		return userService.paginar(PageRequest.of(page, 3));
 	}
 
-	@PutMapping("/update")
-	public User views(@RequestBody User val) {
-		return repo.save(val);
+	@GetMapping("/ver/{val}")
+	public ResponseEntity<?> ver(@PathVariable Integer val) {
+		// return repo.findById(val);
+		User user = null;
+		Map<String, Object> response = new HashMap<>();
+		try {
+			user = userService.buscar(val);
+		} catch (DataAccessException e) {
+			response.put("mensaje", "Error al realizar la consulta en la base de datos");
+			response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NOT_FOUND);
+		}
+		if (user == null) {
+			response.put("mensaje",
+					"La referencia Id: ".concat(val.toString().concat(" no existe en la base de datos")));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NOT_FOUND);
+		}
+		return new ResponseEntity<User>(user, HttpStatus.OK);
+
 	}
 
-	@DeleteMapping("/delete/{val}")
-	public String delete(@PathVariable Integer val) {
-		repo.deleteById(val);
-		return "Id : " + val + " delete";
+	@PutMapping("/actualizar/{id}")
+	public ResponseEntity<?> actualizar(@PathVariable Integer id, @RequestBody User val) {
+		// return repo.save(val);
+		try {
+			return ResponseEntity.ok(userService.modificarUsuario(id, val));
+		} catch (Exception e) {
+			return new ResponseEntity<>("NO SE ENCONTRÓ EL USUARIO", HttpStatus.NOT_FOUND);
+		}
+	}
+
+	@DeleteMapping("/eliminar/{val}")
+	public ResponseEntity<?> delete(@PathVariable Integer val) {
+//		repo.deleteById(val);
+//		return "Id : " + val + " delete";
+		Map<String, Object> response = new HashMap<>();
+		try {
+			userService.eliminarUsuario(val);
+
+		} catch (DataAccessException e) {
+			response.put("mensaje", "Error al eliminar el usuario de la base de datos");
+			response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		response.put("mensaje", "El usuario ha sido eliminado con éxito");
+		return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NO_CONTENT);
 	}
 
 }
