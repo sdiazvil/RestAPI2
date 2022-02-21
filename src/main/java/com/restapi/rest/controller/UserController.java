@@ -80,8 +80,7 @@ public class UserController {
 			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NOT_FOUND);
 		}
 		if (user == null) {
-			response.put("mensaje",
-					"La referencia Id: ".concat(val.toString().concat(" no existe en la base de datos")));
+			response.put("mensaje", "El usuario Id: ".concat(val.toString().concat(" no existe en la base de datos")));
 			return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NOT_FOUND);
 		}
 		return new ResponseEntity<User>(user, HttpStatus.OK);
